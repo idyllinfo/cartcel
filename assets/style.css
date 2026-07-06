@@ -414,3 +414,97 @@ header {
     display: inline-block;
     margin-bottom: 4px;
 }
+.banner-admin-card {
+    display: flex;
+    gap: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    align-items: flex-start;
+}
+
+.banner-admin-card img {
+    width: 200px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.banner-admin-card label {
+    font-weight: bold;
+    font-size: 13px;
+    margin-top: 8px;
+    display: block;
+}
+
+.banner-admin-card input, .banner-admin-card select {
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+}
+
+/* Homepage slider */
+.banner-slider {
+    position: relative;
+    width: 100%;
+    max-height: 350px;
+    overflow: hidden;
+}
+
+.banner-slide {
+    display: none;
+    position: relative;
+}
+
+.banner-slide.active {
+    display: block;
+}
+
+.banner-slide img {
+    width: 100%;
+    max-height: 350px;
+    object-fit: cover;
+    display: block;
+}
+
+.banner-caption {
+    position: absolute;
+    bottom: 20px;
+    left: 30px;
+    color: white;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.banner-caption h2 {
+    margin: 0 0 5px 0;
+    font-size: 28px;
+}
+
+.banner-caption p {
+    margin: 0;
+    font-size: 16px;
+}
+
+.banner-dots {
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+}
+
+.banner-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    border: none;
+}
+
+.banner-dot.active {
+    background: white;
+}

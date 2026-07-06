@@ -1,6 +1,9 @@
 <?php
 require '../includes/db.php';
 
+// Get active banners
+$banners = $conn->query("SELECT * FROM banners WHERE status = 'active' ORDER BY sort_order ASC")->fetch_all(MYSQLI_ASSOC);
+
 // Get all categories for the filter tabs
 $catResult = $conn->query("SELECT * FROM categories ORDER BY name");
 $categories = $catResult->fetch_all(MYSQLI_ASSOC);
@@ -8,7 +11,6 @@ $categories = $catResult->fetch_all(MYSQLI_ASSOC);
 // Check if a category filter was selected
 $selectedCategory = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 
-// Build product query based on filter
 if ($selectedCategory > 0) {
     $stmt = $conn->prepare("SELECT p.*, pi.image_path 
         FROM products p
@@ -41,6 +43,32 @@ if ($selectedCategory > 0) {
     <a href="cart.php" class="cart-link">🛒 View Cart</a>
 </header>
 
+<?php if (!empty($banners)): ?>
+<div class="banner-slider" id="bannerSlider">
+    <?php foreach ($banners as $i => $b): ?>
+        <div class="banner-slide <?= $i === 0 ? 'active' : '' ?>">
+            <?php if (!empty($b['link_url'])): ?><a href="<?= htmlspecialchars($b['link_url']) ?>"><?php endif; ?>
+                <img src="../uploads/<?= htmlspecialchars($b['image_path']) ?>" alt="<?= htmlspecialchars($b['title']) ?>">
+                <?php if ($b['title'] || $b['subtitle']): ?>
+                    <div class="banner-caption">
+                        <?php if ($b['title']): ?><h2><?= htmlspecialchars($b['title']) ?></h2><?php endif; ?>
+                        <?php if ($b['subtitle']): ?><p><?= htmlspecialchars($b['subtitle']) ?></p><?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            <?php if (!empty($b['link_url'])): ?></a><?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+
+    <?php if (count($banners) > 1): ?>
+    <div class="banner-dots">
+        <?php foreach ($banners as $i => $b): ?>
+            <button class="banner-dot <?= $i === 0 ? 'active' : '' ?>" onclick="goToSlide(<?= $i ?>)"></button>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="category-filter">
     <a href="index.php" class="filter-btn <?= $selectedCategory === 0 ? 'active' : '' ?>">All</a>
     <?php foreach ($categories as $cat): ?>
@@ -67,6 +95,30 @@ if ($selectedCategory > 0) {
     </a>
 <?php endwhile; ?>
 </div>
+
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.banner-slide');
+const dots = document.querySelectorAll('.banner-dot');
+
+function goToSlide(index) {
+    if (slides.length === 0) return;
+    slides[currentSlide].classList.remove('active');
+    if (dots.length) dots[currentSlide].classList.remove('active');
+    currentSlide = index;
+    slides[currentSlide].classList.add('active');
+    if (dots.length) dots[currentSlide].classList.add('active');
+}
+
+function nextSlide() {
+    if (slides.length === 0) return;
+    goToSlide((currentSlide + 1) % slides.length);
+}
+
+if (slides.length > 1) {
+    setInterval(nextSlide, 4000);
+}
+</script>
 
 </body>
 </html>
