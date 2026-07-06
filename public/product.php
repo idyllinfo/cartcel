@@ -59,7 +59,12 @@ $specs = $specStmt->get_result()->fetch_all(MYSQLI_ASSOC);
             </ul>
         <?php endif; ?>
 
-        <button class="add-to-cart-btn">Add to Cart</button>
+        <form action="add-to-cart.php" method="POST">
+            <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" style="width:60px; margin: 0 10px;">
+            <button type="submit" class="add-to-cart-btn">Add to Cart</button>
+        </form>
     </div>
 </div>
 

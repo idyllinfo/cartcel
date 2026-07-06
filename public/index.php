@@ -38,6 +38,7 @@ if ($selectedCategory > 0) {
 <header>
     <h1>Cartcel</h1>
     <p>Quality Gadgets, Genuine Prices</p>
+    <a href="cart.php" class="cart-link">🛒 View Cart</a>
 </header>
 
 <div class="category-filter">
