@@ -508,3 +508,28 @@ header {
 .banner-dot.active {
     background: white;
 }
+.order-status {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.status-pending { background: #f9a825; }
+.status-paid { background: #1565c0; }
+.status-shipped { background: #6a1b9a; }
+.status-completed { background: #2e7d32; }
+.status-cancelled { background: #c62828; }
+
+.order-detail-box {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.order-detail-box p {
+    margin: 6px 0;
+}
