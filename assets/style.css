@@ -24,6 +24,9 @@ header {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-decoration: none;
+    color: inherit;
+    display: block;
 }
 
 .product-card img {
@@ -53,4 +56,54 @@ header {
     font-weight: bold;
     font-size: 18px;
     margin-top: 6px;
+}
+
+.product-detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.product-detail-images {
+    flex: 1;
+    min-width: 300px;
+}
+
+.product-detail-images img {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.product-detail-info {
+    flex: 1;
+    min-width: 300px;
+}
+
+.spec-list {
+    list-style: none;
+    padding: 0;
+}
+
+.spec-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.add-to-cart-btn {
+    background: #111;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.add-to-cart-btn:hover {
+    background: #333;
 }

@@ -24,7 +24,7 @@ $result = $conn->query($sql);
 
 <div class="product-grid">
 <?php while ($row = $result->fetch_assoc()): ?>
-    <div class="product-card">
+    <a href="product.php?slug=<?= urlencode($row['slug']) ?>" class="product-card">
         <img src="../uploads/<?= htmlspecialchars($row['image_path']) ?>" alt="<?= htmlspecialchars($row['name']) ?>">
         <div class="product-info">
             <span class="badge badge-<?= $row['condition_type'] ?>">
@@ -33,7 +33,7 @@ $result = $conn->query($sql);
             <h3><?= htmlspecialchars($row['name']) ?></h3>
             <div class="price">₦<?= number_format($row['price'], 2) ?></div>
         </div>
-    </div>
+    </a>
 <?php endwhile; ?>
 </div>
 
