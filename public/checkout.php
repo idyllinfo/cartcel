@@ -73,8 +73,23 @@ if (empty($cartItems)) {
         <label>Phone Number</label>
         <input type="text" name="phone" required>
 
+        <label>Email (needed for Paystack receipt)</label>
+        <input type="email" name="email" required>
+
         <label>Delivery Address</label>
         <textarea name="address" required></textarea>
+
+        <label>Payment Method</label>
+        <div class="payment-options">
+            <label class="payment-option">
+                <input type="radio" name="payment_method" value="paystack" checked>
+                💳 Pay Online (Card/Bank Transfer via Paystack)
+            </label>
+            <label class="payment-option">
+                <input type="radio" name="payment_method" value="delivery">
+                🚚 Pay on Delivery
+            </label>
+        </div>
 
         <button type="submit" class="add-to-cart-btn">Place Order</button>
     </form>
