@@ -1,31 +1,46 @@
 <?php
 require '../includes/db.php';
 
-// Get active banners
 $banners = $conn->query("SELECT * FROM banners WHERE status = 'active' ORDER BY sort_order ASC")->fetch_all(MYSQLI_ASSOC);
-
-// Get all categories for the filter tabs
 $catResult = $conn->query("SELECT * FROM categories ORDER BY name");
 $categories = $catResult->fetch_all(MYSQLI_ASSOC);
-
-// Check if a category filter was selected
 $selectedCategory = isset($_GET['category']) ? (int)$_GET['category'] : 0;
+$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+// Build query dynamically based on filters
+$conditions = ["p.status = 'active'"];
+$params = [];
+$types = '';
 
 if ($selectedCategory > 0) {
-    $stmt = $conn->prepare("SELECT p.*, pi.image_path 
+    $conditions[] = "p.category_id = ?";
+    $params[] = $selectedCategory;
+    $types .= 'i';
+}
+
+if ($searchTerm !== '') {
+    $conditions[] = "(p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)";
+    $likeTerm = '%' . $searchTerm . '%';
+    $params[] = $likeTerm;
+    $params[] = $likeTerm;
+    $params[] = $likeTerm;
+    $types .= 'sss';
+}
+
+$whereClause = implode(' AND ', $conditions);
+
+$sql = "SELECT p.*, pi.image_path 
         FROM products p
         LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
-        WHERE p.status = 'active' AND p.category_id = ?
-        ORDER BY p.created_at DESC");
-    $stmt->bind_param("i", $selectedCategory);
+        WHERE $whereClause
+        ORDER BY p.created_at DESC";
+
+if (!empty($params)) {
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
 } else {
-    $sql = "SELECT p.*, pi.image_path 
-            FROM products p
-            LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
-            WHERE p.status = 'active'
-            ORDER BY p.created_at DESC";
     $result = $conn->query($sql);
 }
 ?>
@@ -37,13 +52,16 @@ if ($selectedCategory > 0) {
 </head>
 <body>
 
-<header>
-    <h1>Cartcel</h1>
-    <p>Quality Gadgets, Genuine Prices</p>
-    <a href="cart.php" class="cart-link">🛒 View Cart</a>
+<header class="site-header">
+    <a href="index.php" class="logo">Cart<span>cel</span></a>
+    <form class="search-bar" action="index.php" method="GET">
+        <input type="text" name="search" placeholder="Search for phones, laptops, accessories..." value="<?= htmlspecialchars($searchTerm) ?>">
+        <button type="submit">Search</button>
+    </form>
+    <a href="cart.php" class="cart-link">🛒 Cart</a>
 </header>
 
-<?php if (!empty($banners)): ?>
+<?php if (!empty($banners) && $searchTerm === ''): ?>
 <div class="banner-slider" id="bannerSlider">
     <?php foreach ($banners as $i => $b): ?>
         <div class="banner-slide <?= $i === 0 ? 'active' : '' ?>">
@@ -58,7 +76,6 @@ if ($selectedCategory > 0) {
             <?php if (!empty($b['link_url'])): ?></a><?php endif; ?>
         </div>
     <?php endforeach; ?>
-
     <?php if (count($banners) > 1): ?>
     <div class="banner-dots">
         <?php foreach ($banners as $i => $b): ?>
@@ -78,9 +95,25 @@ if ($selectedCategory > 0) {
     <?php endforeach; ?>
 </div>
 
+<div class="section-heading">
+    <h2>
+        <?php if ($searchTerm !== ''): ?>
+            Search results for "<?= htmlspecialchars($searchTerm) ?>"
+        <?php else: ?>
+            All Products
+        <?php endif; ?>
+    </h2>
+</div>
+
 <div class="product-grid">
 <?php if ($result->num_rows === 0): ?>
-    <p style="padding: 20px;">No products found in this category.</p>
+    <p style="padding: 20px;">
+        <?php if ($searchTerm !== ''): ?>
+            No products found matching "<?= htmlspecialchars($searchTerm) ?>". <a href="index.php" style="color:#1A56C4;">View all products</a>
+        <?php else: ?>
+            No products found in this category.
+        <?php endif; ?>
+    </p>
 <?php endif; ?>
 <?php while ($row = $result->fetch_assoc()): ?>
     <a href="product.php?slug=<?= urlencode($row['slug']) ?>" class="product-card">
@@ -95,6 +128,10 @@ if ($selectedCategory > 0) {
     </a>
 <?php endwhile; ?>
 </div>
+
+<footer class="site-footer">
+    <p><strong>Cartcel</strong> — Quality gadgets, genuine prices. Lagos, Nigeria.</p>
+</footer>
 
 <script>
 let currentSlide = 0;
