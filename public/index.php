@@ -69,7 +69,8 @@ function categoryIcon($name) {
         <input type="text" name="search" placeholder="Search phones, laptops, accessories..." value="<?= htmlspecialchars($searchTerm) ?>">
         <button type="submit">Search</button>
     </form>
-    <a href="cart.php" class="cart-link">Cart</a>
+    <a href="track-order.php" style="color:#F2EFE9; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-right:8px;">Track Order</a>
+<a href="cart.php" class="cart-link">Cart</a>
 </header>
 
 <?php if (!empty($banners) && $searchTerm === ''): ?>
@@ -164,6 +165,7 @@ function categoryIcon($name) {
             <h4>Quick Links</h4>
             <a href="index.php">Home</a>
             <a href="index.php">Shop</a>
+            <a href="track-order.php">Track Order</a>
             <a href="cart.php">Cart</a>
         </div>
         <div>
