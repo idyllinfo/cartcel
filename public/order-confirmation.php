@@ -16,13 +16,16 @@ if (!$order) {
 <html>
 <head>
     <title>Order Confirmed - Cartcel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1><a href="index.php" style="color:white; text-decoration:none;">Cartcel</a></h1>
-    <p>Quality Gadgets, Genuine Prices</p>
+<header class="site-header">
+    <a href="index.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Genuine Gadgets, Verified Condition</p>
+    <a href="cart.php" class="cart-link">Cart</a>
 </header>
 
 <div class="confirmation-page">

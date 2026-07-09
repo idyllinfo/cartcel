@@ -7,7 +7,6 @@ $categories = $catResult->fetch_all(MYSQLI_ASSOC);
 $selectedCategory = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Build query dynamically based on filters
 $conditions = ["p.status = 'active'"];
 $params = [];
 $types = '';
@@ -43,22 +42,34 @@ if (!empty($params)) {
 } else {
     $result = $conn->query($sql);
 }
+
+// Simple icon per category name (fallback to a generic icon)
+function categoryIcon($name) {
+    $name = strtolower($name);
+    if (strpos($name, 'phone') !== false) return '📱';
+    if (strpos($name, 'laptop') !== false) return '💻';
+    if (strpos($name, 'accessor') !== false) return '🎧';
+    return '🛍️';
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Cartcel - Gadgets Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
 <header class="site-header">
     <a href="index.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Genuine Gadgets, Verified Condition</p>
     <form class="search-bar" action="index.php" method="GET">
-        <input type="text" name="search" placeholder="Search for phones, laptops, accessories..." value="<?= htmlspecialchars($searchTerm) ?>">
+        <input type="text" name="search" placeholder="Search phones, laptops, accessories..." value="<?= htmlspecialchars($searchTerm) ?>">
         <button type="submit">Search</button>
     </form>
-    <a href="cart.php" class="cart-link">🛒 Cart</a>
+    <a href="cart.php" class="cart-link">Cart</a>
 </header>
 
 <?php if (!empty($banners) && $searchTerm === ''): ?>
@@ -86,6 +97,20 @@ if (!empty($params)) {
 </div>
 <?php endif; ?>
 
+<?php if ($searchTerm === '' && $selectedCategory === 0): ?>
+<div class="shop-category-section">
+    <h2>Shop by Category</h2>
+    <div class="category-tiles">
+        <?php foreach ($categories as $cat): ?>
+            <a href="index.php?category=<?= $cat['id'] ?>" class="category-tile">
+                <span class="cat-icon"><?= categoryIcon($cat['name']) ?></span>
+                <?= htmlspecialchars($cat['name']) ?>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="category-filter">
     <a href="index.php" class="filter-btn <?= $selectedCategory === 0 ? 'active' : '' ?>">All</a>
     <?php foreach ($categories as $cat): ?>
@@ -98,18 +123,18 @@ if (!empty($params)) {
 <div class="section-heading">
     <h2>
         <?php if ($searchTerm !== ''): ?>
-            Search results for "<?= htmlspecialchars($searchTerm) ?>"
+            Results for "<?= htmlspecialchars($searchTerm) ?>"
         <?php else: ?>
-            All Products
+            Featured Products
         <?php endif; ?>
     </h2>
 </div>
 
 <div class="product-grid">
 <?php if ($result->num_rows === 0): ?>
-    <p style="padding: 20px;">
+    <p style="padding: 20px; text-align:center;">
         <?php if ($searchTerm !== ''): ?>
-            No products found matching "<?= htmlspecialchars($searchTerm) ?>". <a href="index.php" style="color:#1A56C4;">View all products</a>
+            No products found matching "<?= htmlspecialchars($searchTerm) ?>". <a href="index.php" style="color:#C9A24B;">View all products</a>
         <?php else: ?>
             No products found in this category.
         <?php endif; ?>
@@ -120,7 +145,7 @@ if (!empty($params)) {
         <img src="../uploads/<?= htmlspecialchars($row['image_path']) ?>" alt="<?= htmlspecialchars($row['name']) ?>">
         <div class="product-info">
             <span class="badge badge-<?= $row['condition_type'] ?>">
-                <?= strtoupper(str_replace('_', ' ', $row['condition_type'])) ?>
+                <?= $row['condition_type'] === 'uk_used' ? 'PRE-OWNED' : strtoupper(str_replace('_', ' ', $row['condition_type'])) ?>
             </span>
             <h3><?= htmlspecialchars($row['name']) ?></h3>
             <div class="price">₦<?= number_format($row['price'], 2) ?></div>
@@ -130,7 +155,27 @@ if (!empty($params)) {
 </div>
 
 <footer class="site-footer">
-    <p><strong>Cartcel</strong> — Quality gadgets, genuine prices. Lagos, Nigeria.</p>
+    <div class="footer-columns">
+        <div>
+            <h4>Cartcel</h4>
+            <p>Your one-stop shop for phones, laptops, and accessories — genuine and verified.</p>
+        </div>
+        <div>
+            <h4>Quick Links</h4>
+            <a href="index.php">Home</a>
+            <a href="index.php">Shop</a>
+            <a href="cart.php">Cart</a>
+        </div>
+        <div>
+            <h4>Contact Us</h4>
+            <p>Email: info@cartcel.com</p>
+            <p>Phone: +234 800 000 0000</p>
+            <p>Lagos, Nigeria</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        &copy; <?= date('Y') ?> Cartcel. All rights reserved.
+    </div>
 </footer>
 
 <script>

@@ -4,7 +4,6 @@ require '../includes/admin-auth.php';
 
 $orderId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
     $status = $_POST['status'];
     $allowedStatuses = ['pending','paid','shipped','completed','cancelled'];
@@ -38,13 +37,16 @@ $items = $itemStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 <html>
 <head>
     <title>Order #<?= $order['id'] ?> - Cartcel Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1>Cartcel Admin</h1>
-    <p><a href="orders.php" style="color:#ccc;">← Back to Orders</a> | <a href="logout.php" style="color:#ffb3b3;">Logout</a></p>
+<header class="site-header">
+    <a href="dashboard.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Admin Panel</p>
+    <p style="color:#F2EFE9; font-size:13px;"><a href="orders.php" style="color:#C9A24B;">← Back to Orders</a> | <a href="logout.php" style="color:#C9A24B;">Logout</a></p>
 </header>
 
 <div class="admin-content">

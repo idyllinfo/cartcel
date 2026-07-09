@@ -6,13 +6,16 @@ require '../includes/admin-auth.php';
 <html>
 <head>
     <title>Admin Dashboard - Cartcel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1>Cartcel Admin</h1>
-    <p>Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?> | <a href="logout.php" style="color:#ffb3b3;">Logout</a></p>
+<header class="site-header">
+    <a href="dashboard.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Admin Panel</p>
+    <p style="color:#F2EFE9; font-size:13px;">Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?> | <a href="logout.php" style="color:#C9A24B;">Logout</a></p>
 </header>
 
 <div class="admin-dashboard">

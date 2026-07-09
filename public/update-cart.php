@@ -1,18 +1,18 @@
 <?php
 require '../includes/db.php';
 
-$productId = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
+$cartKey = $_POST['cart_key'] ?? '';
 $action = $_POST['action'] ?? '';
 
-if ($productId > 0) {
+if ($cartKey !== '' && isset($_SESSION['cart'][$cartKey])) {
     if ($action === 'remove') {
-        unset($_SESSION['cart'][$productId]);
+        unset($_SESSION['cart'][$cartKey]);
     } elseif ($action === 'update') {
         $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
         if ($quantity > 0) {
-            $_SESSION['cart'][$productId] = $quantity;
+            $_SESSION['cart'][$cartKey] = $quantity;
         } else {
-            unset($_SESSION['cart'][$productId]);
+            unset($_SESSION['cart'][$cartKey]);
         }
     }
 }

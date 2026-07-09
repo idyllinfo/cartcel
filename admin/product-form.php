@@ -6,7 +6,6 @@ $productId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $isEdit = $productId > 0;
 $error = '';
 
-// Handle delete image
 if (isset($_GET['delete_image']) && $productId) {
     $imgId = (int)$_GET['delete_image'];
     $stmt = $conn->prepare("SELECT image_path FROM product_images WHERE id = ? AND product_id = ?");
@@ -23,7 +22,6 @@ if (isset($_GET['delete_image']) && $productId) {
     exit;
 }
 
-// Handle set primary image
 if (isset($_GET['set_primary']) && $productId) {
     $imgId = (int)$_GET['set_primary'];
     $conn->query("UPDATE product_images SET is_primary = 0 WHERE product_id = $productId");
@@ -34,7 +32,6 @@ if (isset($_GET['set_primary']) && $productId) {
     exit;
 }
 
-// Handle delete serial
 if (isset($_GET['delete_serial']) && $productId) {
     $unitId = (int)$_GET['delete_serial'];
     $stmt = $conn->prepare("DELETE FROM product_units WHERE id = ? AND product_id = ?");
@@ -44,7 +41,6 @@ if (isset($_GET['delete_serial']) && $productId) {
     exit;
 }
 
-// Handle toggle serial status (available <-> sold)
 if (isset($_GET['toggle_serial']) && $productId) {
     $unitId = (int)$_GET['toggle_serial'];
     $stmt = $conn->prepare("SELECT status FROM product_units WHERE id = ? AND product_id = ?");
@@ -61,6 +57,15 @@ if (isset($_GET['toggle_serial']) && $productId) {
     exit;
 }
 
+if (isset($_GET['delete_variant']) && $productId) {
+    $variantId = (int)$_GET['delete_variant'];
+    $stmt = $conn->prepare("DELETE FROM product_variants WHERE id = ? AND product_id = ?");
+    $stmt->bind_param("ii", $variantId, $productId);
+    $stmt->execute();
+    header("Location: product-form.php?id=$productId");
+    exit;
+}
+
 $product = [
     'name' => '', 'category_id' => '', 'description' => '', 'price' => '',
     'condition_type' => 'new', 'brand' => '', 'has_serials' => 0,
@@ -69,6 +74,7 @@ $product = [
 $specs = [];
 $units = [];
 $images = [];
+$variants = [];
 
 if ($isEdit) {
     $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
@@ -90,6 +96,11 @@ if ($isEdit) {
     $imgStmt->bind_param("i", $productId);
     $imgStmt->execute();
     $images = $imgStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    $varStmt = $conn->prepare("SELECT * FROM product_variants WHERE product_id = ? ORDER BY id ASC");
+    $varStmt->bind_param("i", $productId);
+    $varStmt->execute();
+    $variants = $varStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
 $categories = $conn->query("SELECT * FROM categories ORDER BY name")->fetch_all(MYSQLI_ASSOC);
@@ -121,7 +132,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $productId = $conn->insert_id;
         }
 
-        // Update/replace specs (existing spec IDs come with spec_id[], new rows have empty spec_id)
         $conn->query("DELETE FROM product_specs WHERE product_id = $productId");
         if (!empty($_POST['spec_name'])) {
             $specStmt = $conn->prepare("INSERT INTO product_specs (product_id, spec_name, spec_value) VALUES (?, ?, ?)");
@@ -135,7 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Add new serial numbers
         if ($hasSerials && !empty($_POST['new_serials'])) {
             $serials = preg_split('/[\r\n,]+/', trim($_POST['new_serials']));
             $unitStmt = $conn->prepare("INSERT INTO product_units (product_id, serial_number, status) VALUES (?, ?, 'available')");
@@ -148,7 +157,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Handle image upload (can upload multiple at once now)
+        if (!empty($_POST['variant_color']) || !empty($_POST['variant_storage']) || !empty($_POST['variant_ram'])) {
+            $vIds = $_POST['variant_id'] ?? [];
+            $vColors = $_POST['variant_color'] ?? [];
+            $vStorages = $_POST['variant_storage'] ?? [];
+            $vRams = $_POST['variant_ram'] ?? [];
+            $vPrices = $_POST['variant_price'] ?? [];
+            $vStocks = $_POST['variant_stock'] ?? [];
+
+            foreach ($vColors as $i => $color) {
+                $color = trim($color);
+                $storage = trim($vStorages[$i] ?? '');
+                $ram = trim($vRams[$i] ?? '');
+                if ($color === '' && $storage === '' && $ram === '') continue;
+
+                $vPrice = trim($vPrices[$i] ?? '');
+                $vPrice = $vPrice === '' ? null : (float)$vPrice;
+                $vStock = (int)($vStocks[$i] ?? 0);
+                $existingId = (int)($vIds[$i] ?? 0);
+
+                if ($existingId > 0) {
+                    $upd = $conn->prepare("UPDATE product_variants SET color=?, storage=?, ram=?, price=?, stock_qty=? WHERE id=? AND product_id=?");
+                    $upd->bind_param("sssdiii", $color, $storage, $ram, $vPrice, $vStock, $existingId, $productId);
+                    $upd->execute();
+                } else {
+                    $ins = $conn->prepare("INSERT INTO product_variants (product_id, color, storage, ram, price, stock_qty) VALUES (?, ?, ?, ?, ?, ?)");
+                    $ins->bind_param("isssdi", $productId, $color, $storage, $ram, $vPrice, $vStock);
+                    $ins->execute();
+                }
+            }
+        }
+
         if (!empty($_FILES['product_image']['name'][0])) {
             $allowedExt = ['jpg','jpeg','png','webp'];
             foreach ($_FILES['product_image']['name'] as $i => $fileName) {
@@ -181,13 +220,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 <head>
     <title><?= $isEdit ? 'Edit' : 'Add' ?> Product - Cartcel Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1>Cartcel Admin</h1>
-    <p><a href="products.php" style="color:#ccc;">← Back to Products</a> | <a href="logout.php" style="color:#ffb3b3;">Logout</a></p>
+<header class="site-header">
+    <a href="dashboard.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Admin Panel</p>
+    <p style="color:#F2EFE9; font-size:13px;"><a href="products.php" style="color:#C9A24B;">← Back to Products</a> | <a href="logout.php" style="color:#C9A24B;">Logout</a></p>
 </header>
 
 <div class="admin-content">
@@ -216,13 +258,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label>Description</label>
         <textarea name="description" rows="4"><?= htmlspecialchars($product['description']) ?></textarea>
 
-        <label>Price (₦)</label>
+        <label>Base Price (₦) — used when a variant has no price override</label>
         <input type="number" name="price" step="0.01" value="<?= htmlspecialchars($product['price']) ?>" required>
 
         <label>Condition</label>
         <select name="condition_type">
             <option value="new" <?= $product['condition_type']=='new'?'selected':'' ?>>New</option>
-            <option value="uk_used" <?= $product['condition_type']=='uk_used'?'selected':'' ?>>UK Used</option>
+          <option value="uk_used" <?= $product['condition_type']=='uk_used'?'selected':'' ?>>Pre-owned</option> 
             <option value="ng_used" <?= $product['condition_type']=='ng_used'?'selected':'' ?>>NG Used</option>
         </select>
 
@@ -238,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </label>
 
         <div id="stockField" style="<?= $product['has_serials'] ? 'display:none;' : '' ?>">
-            <label>Stock Quantity (for non-serialized items)</label>
+            <label>Stock Quantity (only used if this product has NO variants below)</label>
             <input type="number" name="stock_qty" value="<?= htmlspecialchars($product['stock_qty']) ?>">
         </div>
 
@@ -280,6 +322,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <button type="button" onclick="addSpecRow()" class="small-btn">+ Add Spec</button>
 
+        <h3>Variants (Color / Storage / RAM)</h3>
+        <p style="font-size:13px; color:#8A8D96; margin-top:-8px;">Leave price blank to use the base price above. Leave color, storage, and RAM ALL blank on a row to skip it. Only fill this in if this product actually comes in multiple options.</p>
+        <div id="variantsContainer">
+            <?php if (!empty($variants)): foreach ($variants as $v): ?>
+                <div class="variant-row">
+                    <input type="hidden" name="variant_id[]" value="<?= $v['id'] ?>">
+                    <input type="text" name="variant_color[]" placeholder="Color (e.g. Black)" value="<?= htmlspecialchars($v['color']) ?>">
+                    <input type="text" name="variant_storage[]" placeholder="Storage (e.g. 128GB)" value="<?= htmlspecialchars($v['storage']) ?>">
+                    <input type="text" name="variant_ram[]" placeholder="RAM (e.g. 8GB)" value="<?= htmlspecialchars($v['ram']) ?>">
+                    <input type="number" name="variant_price[]" placeholder="Price override" step="0.01" value="<?= $v['price'] !== null ? htmlspecialchars($v['price']) : '' ?>">
+                    <input type="number" name="variant_stock[]" placeholder="Stock" value="<?= htmlspecialchars($v['stock_qty']) ?>">
+                    <?php if ($isEdit): ?>
+                        <a href="?id=<?= $productId ?>&delete_variant=<?= $v['id'] ?>" class="small-btn danger" onclick="return confirm('Delete this variant?')">Delete</a>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; else: ?>
+                <div class="variant-row">
+                    <input type="hidden" name="variant_id[]" value="0">
+                    <input type="text" name="variant_color[]" placeholder="Color (e.g. Black)">
+                    <input type="text" name="variant_storage[]" placeholder="Storage (e.g. 128GB)">
+                    <input type="text" name="variant_ram[]" placeholder="RAM (e.g. 8GB)">
+                    <input type="number" name="variant_price[]" placeholder="Price override" step="0.01">
+                    <input type="number" name="variant_stock[]" placeholder="Stock">
+                    <button type="button" onclick="this.parentElement.remove()" class="small-btn danger">Remove</button>
+                </div>
+            <?php endif; ?>
+        </div>
+        <button type="button" onclick="addVariantRow()" class="small-btn">+ Add Variant</button>
+
         <?php if ($product['has_serials']): ?>
             <label>Add New Serial Numbers (one per line, only for new stock)</label>
             <textarea name="new_serials" rows="4" placeholder="IMEI123456&#10;IMEI789012"></textarea>
@@ -316,6 +387,14 @@ function addSpecRow() {
     const row = document.createElement('div');
     row.className = 'spec-row';
     row.innerHTML = '<input type="text" name="spec_name[]" placeholder="Spec name"><input type="text" name="spec_value[]" placeholder="Spec value"><button type="button" onclick="this.parentElement.remove()" class="small-btn danger">Remove</button>';
+    container.appendChild(row);
+}
+
+function addVariantRow() {
+    const container = document.getElementById('variantsContainer');
+    const row = document.createElement('div');
+    row.className = 'variant-row';
+    row.innerHTML = '<input type="hidden" name="variant_id[]" value="0"><input type="text" name="variant_color[]" placeholder="Color (e.g. Black)"><input type="text" name="variant_storage[]" placeholder="Storage (e.g. 128GB)"><input type="text" name="variant_ram[]" placeholder="RAM (e.g. 8GB)"><input type="number" name="variant_price[]" placeholder="Price override" step="0.01"><input type="number" name="variant_stock[]" placeholder="Stock"><button type="button" onclick="this.parentElement.remove()" class="small-btn danger">Remove</button>';
     container.appendChild(row);
 }
 

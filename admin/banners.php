@@ -5,7 +5,6 @@ require '../includes/admin-auth.php';
 $error = '';
 $success = '';
 
-// Handle Add
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
     $title = trim($_POST['title'] ?? '');
     $subtitle = trim($_POST['subtitle'] ?? '');
@@ -34,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Edit (text fields only, not image)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
     $id = (int)$_POST['id'];
     $title = trim($_POST['title'] ?? '');
@@ -49,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $success = "Banner updated.";
 }
 
-// Handle Delete
 if (isset($_GET['delete'])) {
     $id = (int)$_GET['delete'];
     $stmt = $conn->prepare("SELECT image_path FROM banners WHERE id = ?");
@@ -72,13 +69,16 @@ $banners = $conn->query("SELECT * FROM banners ORDER BY sort_order ASC, created_
 <html>
 <head>
     <title>Manage Banners - Cartcel Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1>Cartcel Admin</h1>
-    <p><a href="dashboard.php" style="color:#ccc;">← Back to Dashboard</a> | <a href="logout.php" style="color:#ffb3b3;">Logout</a></p>
+<header class="site-header">
+    <a href="dashboard.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Admin Panel</p>
+    <p style="color:#F2EFE9; font-size:13px;"><a href="dashboard.php" style="color:#C9A24B;">← Back to Dashboard</a> | <a href="logout.php" style="color:#C9A24B;">Logout</a></p>
 </header>
 
 <div class="admin-content">

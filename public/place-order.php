@@ -20,53 +20,59 @@ if (!in_array($paymentMethod, ['paystack', 'delivery'])) {
     $paymentMethod = 'delivery';
 }
 
-// Get cart items with current prices
-$ids = array_keys($_SESSION['cart']);
-$placeholders = implode(',', array_fill(0, count($ids), '?'));
-$types = str_repeat('i', count($ids));
-
-$stmt = $conn->prepare("SELECT id, price FROM products WHERE id IN ($placeholders)");
-$stmt->bind_param($types, ...$ids);
-$stmt->execute();
-$result = $stmt->get_result();
-
 $orderItems = [];
 $total = 0;
 
-while ($row = $result->fetch_assoc()) {
-    $qty = $_SESSION['cart'][$row['id']];
-    $subtotal = $row['price'] * $qty;
+foreach ($_SESSION['cart'] as $cartKey => $qty) {
+    list($productId, $variantId) = array_map('intval', explode('-', $cartKey));
+
+    $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt->bind_param("i", $productId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    if (!$row) continue;
+
+    $price = $row['price'];
+
+    if ($variantId > 0) {
+        $vStmt = $conn->prepare("SELECT * FROM product_variants WHERE id = ?");
+        $vStmt->bind_param("i", $variantId);
+        $vStmt->execute();
+        $variant = $vStmt->get_result()->fetch_assoc();
+        if ($variant && $variant['price'] !== null) {
+            $price = $variant['price'];
+        }
+    }
+
+    $subtotal = $price * $qty;
     $total += $subtotal;
+
     $orderItems[] = [
-        'product_id' => $row['id'],
+        'product_id' => $productId,
+        'variant_id' => $variantId > 0 ? $variantId : null,
         'quantity' => $qty,
-        'price' => $row['price']
+        'price' => $price
     ];
 }
 
-// Insert order (status pending until paid, or pending for delivery until fulfilled)
 $orderStmt = $conn->prepare("INSERT INTO orders (customer_name, phone, address, total, status, payment_method) VALUES (?, ?, ?, ?, 'pending', ?)");
 $orderStmt->bind_param("sssds", $customerName, $phone, $address, $total, $paymentMethod);
 $orderStmt->execute();
 $orderId = $conn->insert_id;
 
-// Insert order items
-$itemStmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+$itemStmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, variant_id, quantity, price) VALUES (?, ?, ?, ?, ?)");
 foreach ($orderItems as $item) {
-    $itemStmt->bind_param("iiid", $orderId, $item['product_id'], $item['quantity'], $item['price']);
+    $itemStmt->bind_param("iiiid", $orderId, $item['product_id'], $item['variant_id'], $item['quantity'], $item['price']);
     $itemStmt->execute();
 }
 
-// Store email temporarily in session for Paystack step
 $_SESSION['checkout_email'] = $email;
 
 if ($paymentMethod === 'delivery') {
-    // Clear cart and go straight to confirmation
     $_SESSION['cart'] = [];
     header("Location: order-confirmation.php?order_id=$orderId");
     exit;
 } else {
-    // Redirect to Paystack initialization
     header("Location: paystack-initialize.php?order_id=$orderId");
     exit;
 }

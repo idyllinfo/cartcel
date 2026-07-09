@@ -5,26 +5,36 @@ $cartItems = [];
 $total = 0;
 
 if (!empty($_SESSION['cart'])) {
-    $ids = array_keys($_SESSION['cart']);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $types = str_repeat('i', count($ids));
+    foreach ($_SESSION['cart'] as $cartKey => $qty) {
+        list($productId, $variantId) = array_map('intval', explode('-', $cartKey));
 
-    $stmt = $conn->prepare("SELECT p.*, pi.image_path 
-        FROM products p
-        LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
-        WHERE p.id IN ($placeholders)");
-    $stmt->bind_param($types, ...$ids);
-    $stmt->execute();
-    $result = $stmt->get_result();
+        $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
+        $stmt->bind_param("i", $productId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        if (!$row) continue;
 
-    while ($row = $result->fetch_assoc()) {
-        $qty = $_SESSION['cart'][$row['id']];
-        $subtotal = $row['price'] * $qty;
+        $price = $row['price'];
+        $variantLabel = '';
+
+        if ($variantId > 0) {
+            $vStmt = $conn->prepare("SELECT * FROM product_variants WHERE id = ?");
+            $vStmt->bind_param("i", $variantId);
+            $vStmt->execute();
+            $variant = $vStmt->get_result()->fetch_assoc();
+            if ($variant) {
+                if ($variant['price'] !== null) $price = $variant['price'];
+                $labelParts = array_filter([$variant['color'], $variant['storage'], $variant['ram']]);
+                $variantLabel = implode(' / ', $labelParts);
+            }
+        }
+
+        $subtotal = $price * $qty;
         $total += $subtotal;
+
         $cartItems[] = [
-            'id' => $row['id'],
             'name' => $row['name'],
-            'price' => $row['price'],
+            'variant_label' => $variantLabel,
             'qty' => $qty,
             'subtotal' => $subtotal
         ];
@@ -40,13 +50,16 @@ if (empty($cartItems)) {
 <html>
 <head>
     <title>Checkout - Cartcel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1><a href="index.php" style="color:white; text-decoration:none;">Cartcel</a></h1>
-    <p>Quality Gadgets, Genuine Prices</p>
+<header class="site-header">
+    <a href="index.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Genuine Gadgets, Verified Condition</p>
+    <a href="cart.php" class="cart-link">Cart</a>
 </header>
 
 <div class="checkout-page">
@@ -56,7 +69,7 @@ if (empty($cartItems)) {
         <h3>Order Summary</h3>
         <?php foreach ($cartItems as $item): ?>
             <div class="summary-line">
-                <span><?= htmlspecialchars($item['name']) ?> x <?= $item['qty'] ?></span>
+                <span><?= htmlspecialchars($item['name']) ?><?= $item['variant_label'] ? ' (' . htmlspecialchars($item['variant_label']) . ')' : '' ?> x <?= $item['qty'] ?></span>
                 <span>₦<?= number_format($item['subtotal'], 2) ?></span>
             </div>
         <?php endforeach; ?>

@@ -2,7 +2,6 @@
 require '../includes/db.php';
 require '../includes/admin-auth.php';
 
-// Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
     $orderId = (int)$_POST['order_id'];
     $status = $_POST['status'] ?? 'pending';
@@ -16,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Optional filter by status
 $filterStatus = $_GET['status'] ?? '';
 if ($filterStatus !== '') {
     $stmt = $conn->prepare("SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC");
@@ -31,19 +29,22 @@ if ($filterStatus !== '') {
 <html>
 <head>
     <title>Manage Orders - Cartcel Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<header>
-    <h1>Cartcel Admin</h1>
-    <p><a href="dashboard.php" style="color:#ccc;">← Back to Dashboard</a> | <a href="logout.php" style="color:#ffb3b3;">Logout</a></p>
+<header class="site-header">
+    <a href="dashboard.php" class="logo">Cart<span>cel</span></a>
+    <p class="tagline">Admin Panel</p>
+    <p style="color:#F2EFE9; font-size:13px;"><a href="dashboard.php" style="color:#C9A24B;">← Back to Dashboard</a> | <a href="logout.php" style="color:#C9A24B;">Logout</a></p>
 </header>
 
 <div class="admin-content">
     <h2>Manage Orders</h2>
 
-    <div class="category-filter" style="padding-left:0;">
+    <div class="category-filter" style="padding-left:0; justify-content:flex-start;">
         <a href="orders.php" class="filter-btn <?= $filterStatus==='' ? 'active':'' ?>">All</a>
         <a href="orders.php?status=pending" class="filter-btn <?= $filterStatus==='pending' ? 'active':'' ?>">Pending</a>
         <a href="orders.php?status=paid" class="filter-btn <?= $filterStatus==='paid' ? 'active':'' ?>">Paid</a>
